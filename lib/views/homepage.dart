@@ -228,39 +228,30 @@ class _HomepageState extends State<Homepage>
           SizedBox(height: 16),
 
           // Language indicator
-          Row(
-            children: [
-              Icon(Icons.language, color: Colors.grey[600], size: 16),
-              SizedBox(width: 4),
-              Text(detectedLanguage, style: TextStyle(color: Colors.grey[600])),
-              SizedBox(width: 16),
-              // Language selector dropdown
-              DropdownButton<String>(
-                value: detectedLanguage,
-                onChanged: (String? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      detectedLanguage = newValue;
-                    });
-                  }
-                },
-                items:
-                    <String>[
-                      'en-US',
-                      'en-GB',
-                      'fr-FR',
-                      'de-DE',
-                      'es-ES',
-                      'it-IT',
-                      'pt-PT',
-                    ].map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-              ),
-            ],
+          DropdownButton<String>(
+            value: detectedLanguage,
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  detectedLanguage = newValue;
+                });
+              }
+            },
+            items:
+                <String>[
+                  'en-US',
+                  'en-GB',
+                  'fr-FR',
+                  'de-DE',
+                  'es-ES',
+                  'it-IT',
+                  'pt-PT',
+                ].map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
           ),
 
           SizedBox(height: 16),
