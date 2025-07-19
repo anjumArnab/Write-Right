@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:write_right/models/text_gears_error.dart';
-import 'package:write_right/services/api_service.dart';
-import 'package:write_right/widgets/custom_text_fields_with_error.dart';
+import '../models/text_gears_error.dart';
+import '../models/text_gears_response.dart';
+import '../services/api_service.dart';
+import '../widgets/custom_text_fields_with_error.dart';
 
 class Homepage extends StatefulWidget {
   const Homepage({super.key});
