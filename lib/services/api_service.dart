@@ -23,6 +23,162 @@ class TextGearsResponse {
   }
 }
 
+// Response model for auto correction
+class TextGearsCorrectResponse {
+  final bool status;
+  final String corrected;
+
+  TextGearsCorrectResponse({required this.status, required this.corrected});
+
+  factory TextGearsCorrectResponse.fromJson(Map<String, dynamic> json) {
+    return TextGearsCorrectResponse(
+      status: json['status'] ?? false,
+      corrected: json['response']?['corrected'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'status': status, 'corrected': corrected};
+  }
+}
+
+// Response model for text suggestions
+class TextSuggestion {
+  final String text;
+  final String nextWord;
+
+  TextSuggestion({required this.text, required this.nextWord});
+
+  factory TextSuggestion.fromJson(Map<String, dynamic> json) {
+    return TextSuggestion(
+      text: json['text'] ?? '',
+      nextWord: json['next_word'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'text': text, 'next_word': nextWord};
+  }
+}
+
+class TextGearsSuggestResponse {
+  final bool status;
+  final String corrected;
+  final List<TextSuggestion> suggestions;
+
+  TextGearsSuggestResponse({
+    required this.status,
+    required this.corrected,
+    required this.suggestions,
+  });
+
+  factory TextGearsSuggestResponse.fromJson(Map<String, dynamic> json) {
+    return TextGearsSuggestResponse(
+      status: json['status'] ?? false,
+      corrected: json['response']?['corrected'] ?? '',
+      suggestions:
+          (json['response']?['suggestions'] as List<dynamic>? ?? [])
+              .map((e) => TextSuggestion.fromJson(e as Map<String, dynamic>))
+              .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'corrected': corrected,
+      'suggestions': suggestions.map((e) => e.toJson()).toList(),
+    };
+  }
+}
+
+// Response model for language detection
+class TextGearsDetectResponse {
+  final bool status;
+  final String? language;
+  final String? dialect;
+  final Map<String, double> probabilities;
+
+  TextGearsDetectResponse({
+    required this.status,
+    this.language,
+    this.dialect,
+    required this.probabilities,
+  });
+
+  factory TextGearsDetectResponse.fromJson(Map<String, dynamic> json) {
+    final responseData = json['response'] ?? {};
+    final probabilities = <String, double>{};
+
+    if (responseData['probabilities'] != null) {
+      final probData = responseData['probabilities'] as Map<String, dynamic>;
+      probData.forEach((key, value) {
+        probabilities[key] = (value as num).toDouble();
+      });
+    }
+
+    return TextGearsDetectResponse(
+      status: json['status'] ?? false,
+      language: responseData['language'],
+      dialect: responseData['dialect'],
+      probabilities: probabilities,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'language': language,
+      'dialect': dialect,
+      'probabilities': probabilities,
+    };
+  }
+}
+
+// Response model for summarization
+class TextGearsSummarizeResponse {
+  final bool status;
+  final List<String> keywords;
+  final List<String> highlight;
+  final List<String> summary;
+
+  TextGearsSummarizeResponse({
+    required this.status,
+    required this.keywords,
+    required this.highlight,
+    required this.summary,
+  });
+
+  factory TextGearsSummarizeResponse.fromJson(Map<String, dynamic> json) {
+    final responseData = json['response'] ?? {};
+
+    return TextGearsSummarizeResponse(
+      status: json['status'] ?? false,
+      keywords:
+          (responseData['keywords'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+      highlight:
+          (responseData['highlight'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+      summary:
+          (responseData['summary'] as List<dynamic>? ?? [])
+              .map((e) => e.toString())
+              .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'status': status,
+      'keywords': keywords,
+      'highlight': highlight,
+      'summary': summary,
+    };
+  }
+}
+
 // Exception class for API errors
 class TextGearsException implements Exception {
   final String message;
@@ -36,7 +192,7 @@ class TextGearsException implements Exception {
 
 // API Service class
 class TextGearsApiService {
-  static const String _baseUrl = 'https://api.textgears.com/grammar';
+  static const String _baseUrl = 'https://api.textgears.com';
   final String _apiKey;
   final http.Client _client;
 
@@ -86,7 +242,7 @@ class TextGearsApiService {
 
       // Make the API request
       final response = await _client.post(
-        Uri.parse(_baseUrl),
+        Uri.parse('$_baseUrl/grammar'),
         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
         body: params.map((key, value) => MapEntry(key, value.toString())),
       );
@@ -95,6 +251,229 @@ class TextGearsApiService {
       if (response.statusCode == 200) {
         final Map<String, dynamic> jsonResponse = json.decode(response.body);
         return TextGearsResponse.fromJson(jsonResponse);
+      } else {
+        throw TextGearsException(
+          'API request failed with status: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is TextGearsException) {
+        rethrow;
+      }
+      throw TextGearsException('Network error: ${e.toString()}');
+    }
+  }
+
+  /// Check text for spelling errors
+  ///
+  /// [text] - UTF-8 encoded text to check
+  /// [language] - Language code (optional, defaults to 'en-US')
+  /// [whitelist] - Array of words/phrases to ignore (optional)
+  /// [dictionaryId] - Custom dictionary ID (optional)
+  /// [useAI] - Whether to use TextGears AI for improved analysis (optional)
+  Future<TextGearsResponse> checkSpelling({
+    required String text,
+    String? language,
+    List<String>? whitelist,
+    String? dictionaryId,
+    bool? useAI,
+  }) async {
+    try {
+      if (text.isEmpty) {
+        throw TextGearsException('Text cannot be empty');
+      }
+
+      final Map<String, dynamic> params = {'text': text, 'key': _apiKey};
+
+      if (language != null && language.isNotEmpty) {
+        params['language'] = language;
+      }
+      if (whitelist != null && whitelist.isNotEmpty) {
+        params['whitelist'] = whitelist;
+      }
+      if (dictionaryId != null && dictionaryId.isNotEmpty) {
+        params['dictionary_id'] = dictionaryId;
+      }
+      if (useAI != null) {
+        params['ai'] = useAI;
+      }
+
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/spelling'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params.map((key, value) => MapEntry(key, value.toString())),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        return TextGearsResponse.fromJson(jsonResponse);
+      } else {
+        throw TextGearsException(
+          'API request failed with status: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is TextGearsException) {
+        rethrow;
+      }
+      throw TextGearsException('Network error: ${e.toString()}');
+    }
+  }
+
+  /// Auto-correct text errors
+  ///
+  /// [text] - UTF-8 encoded text to correct
+  /// [language] - Language code (optional, defaults to 'en-US')
+  /// Note: Currently only works for English language
+  Future<TextGearsCorrectResponse> correctText({
+    required String text,
+    String? language,
+  }) async {
+    try {
+      if (text.isEmpty) {
+        throw TextGearsException('Text cannot be empty');
+      }
+
+      final Map<String, dynamic> params = {'text': text, 'key': _apiKey};
+
+      if (language != null && language.isNotEmpty) {
+        params['language'] = language;
+      }
+
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/correct'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params.map((key, value) => MapEntry(key, value.toString())),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        return TextGearsCorrectResponse.fromJson(jsonResponse);
+      } else {
+        throw TextGearsException(
+          'API request failed with status: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is TextGearsException) {
+        rethrow;
+      }
+      throw TextGearsException('Network error: ${e.toString()}');
+    }
+  }
+
+  /// Get text suggestions and corrections
+  ///
+  /// [text] - UTF-8 encoded text to analyze
+  /// [language] - Language code (optional, defaults to 'en-US')
+  Future<TextGearsSuggestResponse> suggestText({
+    required String text,
+    String? language,
+  }) async {
+    try {
+      if (text.isEmpty) {
+        throw TextGearsException('Text cannot be empty');
+      }
+
+      final Map<String, dynamic> params = {'text': text, 'key': _apiKey};
+
+      if (language != null && language.isNotEmpty) {
+        params['language'] = language;
+      }
+
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/suggest'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params.map((key, value) => MapEntry(key, value.toString())),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        return TextGearsSuggestResponse.fromJson(jsonResponse);
+      } else {
+        throw TextGearsException(
+          'API request failed with status: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is TextGearsException) {
+        rethrow;
+      }
+      throw TextGearsException('Network error: ${e.toString()}');
+    }
+  }
+
+  /// Detect language of the text
+  ///
+  /// [text] - UTF-8 encoded text to analyze
+  Future<TextGearsDetectResponse> detectLanguage({required String text}) async {
+    try {
+      if (text.isEmpty) {
+        throw TextGearsException('Text cannot be empty');
+      }
+
+      final Map<String, dynamic> params = {'text': text, 'key': _apiKey};
+
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/detect'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params.map((key, value) => MapEntry(key, value.toString())),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        return TextGearsDetectResponse.fromJson(jsonResponse);
+      } else {
+        throw TextGearsException(
+          'API request failed with status: ${response.statusCode}',
+          response.statusCode,
+        );
+      }
+    } catch (e) {
+      if (e is TextGearsException) {
+        rethrow;
+      }
+      throw TextGearsException('Network error: ${e.toString()}');
+    }
+  }
+
+  /// Summarize text content
+  ///
+  /// [text] - UTF-8 encoded text to summarize
+  /// [language] - Language code (optional, defaults to 'en-US')
+  /// [maxSentences] - Maximum number of sentences in summary (optional)
+  Future<TextGearsSummarizeResponse> summarizeText({
+    required String text,
+    String? language,
+    int? maxSentences,
+  }) async {
+    try {
+      if (text.isEmpty) {
+        throw TextGearsException('Text cannot be empty');
+      }
+
+      final Map<String, dynamic> params = {'text': text, 'key': _apiKey};
+
+      if (language != null && language.isNotEmpty) {
+        params['language'] = language;
+      }
+      if (maxSentences != null) {
+        params['max_sentences'] = maxSentences;
+      }
+
+      final response = await _client.post(
+        Uri.parse('$_baseUrl/summarize'),
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: params.map((key, value) => MapEntry(key, value.toString())),
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = json.decode(response.body);
+        return TextGearsSummarizeResponse.fromJson(jsonResponse);
       } else {
         throw TextGearsException(
           'API request failed with status: ${response.statusCode}',
