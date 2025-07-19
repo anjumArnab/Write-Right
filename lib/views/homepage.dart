@@ -28,10 +28,16 @@ class _HomepageState extends State<Homepage>
   String suggestionText = 'My name is Seth. My family';
   String summaryText = 'The quick brown fox jumps over';
 
+  // Grammar check variables
   List<TextError> grammarErrors = [];
   bool isLoadingGrammar = false;
   String? grammarErrorMessage;
   String detectedLanguage = 'en-US';
+
+  // Spelling check variables
+  List<TextError> spellingErrors = [];
+  bool isLoadingSpelling = false;
+  String? spellingErrorMessage;
 
   @override
   void initState() {
@@ -155,6 +161,75 @@ class _HomepageState extends State<Homepage>
       setState(() {
         grammarErrorMessage = 'Error checking grammar: ${e.toString()}';
         isLoadingGrammar = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Check spelling using TextGears API
+  Future<void> _checkSpelling() async {
+    String text = spellingController.text.trim();
+
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Please enter some text to check'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      isLoadingSpelling = true;
+      spellingErrorMessage = null;
+      spellingErrors = [];
+    });
+
+    try {
+      // Make API call to check spelling
+      TextGearsResponse response = await _textGearsService.checkSpelling(
+        text: text,
+        language: detectedLanguage,
+        useAI: true,
+      );
+
+      if (response.status) {
+        // Convert API errors to UI errors
+        List<TextError> errors = _convertApiErrorsToTextErrors(response.errors);
+
+        setState(() {
+          spellingErrors = errors;
+          isLoadingSpelling = false;
+        });
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              errors.isEmpty
+                  ? 'No spelling errors found!'
+                  : 'Found ${errors.length} spelling error(s)',
+            ),
+            backgroundColor: errors.isEmpty ? Colors.green : Colors.blue,
+          ),
+        );
+      } else {
+        setState(() {
+          spellingErrorMessage = 'API returned error status';
+          isLoadingSpelling = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        spellingErrorMessage = 'Error checking spelling: ${e.toString()}';
+        isLoadingSpelling = false;
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -366,37 +441,134 @@ class _HomepageState extends State<Homepage>
             style: TextStyle(color: Colors.grey[600]),
           ),
           SizedBox(height: 16),
+
+          // Custom text field with error highlighting
           CustomTextFieldWithErrors(
             controller: spellingController,
             hintText: 'Enter text to check spelling...',
-            errors: [
-              TextError(
-                start: 0,
-                end: 16,
-                type: ErrorType.spelling,
-                suggestion: 'Separate the words',
-                originalText: 'Seperatethewordds',
-              ),
-            ],
+            errors: spellingErrors,
           ),
+
           SizedBox(height: 16),
+
+          // Language selector for spelling
+          DropdownButton<String>(
+            value: detectedLanguage,
+            onChanged: (String? newValue) {
+              if (newValue != null) {
+                setState(() {
+                  detectedLanguage = newValue;
+                });
+              }
+            },
+            items:
+                <String>[
+                  'en-US',
+                  'en-GB',
+                  'fr-FR',
+                  'de-DE',
+                  'es-ES',
+                  'it-IT',
+                  'pt-PT',
+                ].map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
+          ),
+
+          SizedBox(height: 16),
+
+          // Error message display
+          if (spellingErrorMessage != null)
+            Container(
+              padding: EdgeInsets.all(12),
+              margin: EdgeInsets.only(bottom: 16),
+              decoration: BoxDecoration(
+                color: Colors.red[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red[300]!),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.error, color: Colors.red, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      spellingErrorMessage!,
+                      style: TextStyle(color: Colors.red[700]),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Spelling check button
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                // Simulate spelling check
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Spelling check completed!')),
-                );
-              },
+              onPressed: isLoadingSpelling ? null : _checkSpelling,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
+                backgroundColor: Colors.purple,
                 foregroundColor: Colors.white,
                 padding: EdgeInsets.symmetric(vertical: 12),
               ),
-              child: Text('Check Spelling'),
+              child:
+                  isLoadingSpelling
+                      ? Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Text('Checking...'),
+                        ],
+                      )
+                      : Text('Check Spelling'),
             ),
           ),
+
+          SizedBox(height: 16),
+
+          // Results summary
+          if (spellingErrors.isNotEmpty)
+            Container(
+              padding: EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.purple[50],
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.purple[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Spelling Check Results',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.purple[800],
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Found ${spellingErrors.length} spelling error(s)',
+                    style: TextStyle(color: Colors.purple[700]),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Click on underlined words to see suggestions and apply corrections.',
+                    style: TextStyle(color: Colors.purple[600], fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
         ],
       ),
     );
