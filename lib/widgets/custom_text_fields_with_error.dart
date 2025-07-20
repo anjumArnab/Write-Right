@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 enum ErrorType { grammar, spelling, autocorrect }
 
@@ -39,11 +40,29 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
   TextError? selectedError;
   OverlayEntry? _overlayEntry;
   final GlobalKey _textFieldKey = GlobalKey();
+  final FocusNode _focusNode = FocusNode();
+  final TextEditingController _underlineController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _syncControllers();
+    widget.controller.addListener(_syncControllers);
+  }
 
   @override
   void dispose() {
     _removeOverlay();
+    _focusNode.dispose();
+    _underlineController.dispose();
+    widget.controller.removeListener(_syncControllers);
     super.dispose();
+  }
+
+  void _syncControllers() {
+    if (_underlineController.text != widget.controller.text) {
+      _underlineController.text = widget.controller.text;
+    }
   }
 
   List<TextError> get _validErrors {
@@ -64,33 +83,44 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
     selectedError = null;
   }
 
-  TextError? _findErrorAtPosition(String text, int position) {
+  TextError? _findErrorAtPosition(int position) {
+    // Find the most specific error (smallest range) at the position
+    TextError? bestMatch;
+    int smallestRange = double.maxFinite.toInt();
+
     for (TextError error in _validErrors) {
+      // Check if position is within error range
       if (position >= error.start && position < error.end) {
-        return error;
+        int range = error.end - error.start;
+        if (range < smallestRange) {
+          smallestRange = range;
+          bestMatch = error;
+        }
       }
     }
-    return null;
+    return bestMatch;
   }
 
   double _calculateDialogWidth(String text) {
-    // Base width for padding and icon
     double baseWidth = 100.0;
-    // Estimate character width (average)
     double charWidth = 8.0;
-    // Calculate width based on the longer text between original and suggestion
     double textWidth = text.length * charWidth;
-    // Add some padding
     double totalWidth = baseWidth + textWidth + 40.0;
-    // Ensure minimum and maximum widths
-    return totalWidth.clamp(120.0, 280.0);
+    return totalWidth.clamp(120.0, 300.0);
   }
 
   void _showSuggestion(TextError error) {
     _removeOverlay();
     selectedError = error;
 
-    // Calculate dialog width based on the longer text
+    // Get the RenderBox to calculate position
+    RenderBox? renderBox =
+        _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    Offset position = renderBox.localToGlobal(Offset.zero);
+    Size size = renderBox.size;
+
     String longerText =
         error.originalText.length > error.suggestion.length
             ? error.originalText
@@ -100,21 +130,24 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
     _overlayEntry = OverlayEntry(
       builder:
           (context) => GestureDetector(
-            onTap: _removeOverlay, // Click outside to dismiss
+            onTap: _removeOverlay,
             child: Container(
               color: Colors.transparent,
               child: Stack(
                 children: [
                   Positioned(
-                    left: 20,
-                    top: 200,
+                    left: (position.dx + 20).clamp(
+                      20.0,
+                      MediaQuery.of(context).size.width - dialogWidth - 20,
+                    ),
+                    top: position.dy + size.height + 8,
                     child: Material(
-                      elevation: 12,
+                      elevation: 8,
                       borderRadius: BorderRadius.circular(12),
                       shadowColor: Colors.black26,
                       child: Container(
                         width: dialogWidth,
-                        padding: EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(12),
@@ -139,7 +172,7 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
                                     size: 14,
                                   ),
                                 ),
-                                SizedBox(width: 8),
+                                const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
                                     _getErrorTypeLabel(error.type),
@@ -151,21 +184,22 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
                                 ),
                                 GestureDetector(
                                   onTap: _removeOverlay,
-                                  child: Icon(Icons.close, size: 18),
+                                  child: const Icon(Icons.close, size: 18),
                                 ),
                               ],
                             ),
-                            SizedBox(height: 12),
+                            const SizedBox(height: 12),
                             GestureDetector(
                               onTap: () {
                                 _applySuggestion(error);
                                 _removeOverlay();
                               },
                               child: Container(
-                                padding: EdgeInsets.all(12),
+                                padding: const EdgeInsets.all(12),
                                 decoration: BoxDecoration(
-                                  color: Colors.transparent,
+                                  color: Colors.grey[50],
                                   borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey[200]!),
                                 ),
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,13 +213,13 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
                                     ),
                                     Text(
                                       '"${error.originalText}"',
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         decoration: TextDecoration.lineThrough,
                                         color: Colors.red,
                                         fontWeight: FontWeight.w500,
                                       ),
                                     ),
-                                    SizedBox(height: 8),
+                                    const SizedBox(height: 8),
                                     Text(
                                       'Suggestion:',
                                       style: TextStyle(
@@ -225,15 +259,29 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
         error.suggestion +
         text.substring(error.end);
 
+    // Calculate the offset difference for cursor positioning
+    int lengthDifference = error.suggestion.length - (error.end - error.start);
+
     widget.controller.text = newText;
 
-    // Update cursor position
+    // Position cursor at the end of the replaced text
     int newCursorPosition = error.start + error.suggestion.length;
     widget.controller.selection = TextSelection.fromPosition(
       TextPosition(offset: newCursorPosition),
     );
 
+    // Update errors list indices to account for text length change
+    _adjustErrorIndicesAfterReplacement(error, lengthDifference);
+
     setState(() {});
+  }
+
+  void _adjustErrorIndicesAfterReplacement(
+    TextError replacedError,
+    int lengthDifference,
+  ) {
+    // This would ideally be handled by the parent widget that manages the errors list
+    // For now, we just trigger a rebuild which should update the errors
   }
 
   Color _getErrorColor(ErrorType type) {
@@ -250,7 +298,7 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
   IconData _getErrorIcon(ErrorType type) {
     switch (type) {
       case ErrorType.grammar:
-        return Icons.arrow_forward_ios;
+        return Icons.edit;
       case ErrorType.spelling:
         return Icons.spellcheck;
       case ErrorType.autocorrect:
@@ -280,49 +328,79 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
       ),
       child: Stack(
         children: [
-          // Rich text for displaying errors
+          // Background TextField for underlines (non-interactive)
           Container(
-            width: double.infinity,
-            padding: EdgeInsets.all(12),
-            child: RichText(text: _buildTextSpan()),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: TextField(
+              controller: _underlineController,
+              style: TextStyle(
+                color: Colors.transparent,
+                fontSize: 16,
+                height: 1.2,
+              ),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              maxLines: 3,
+              minLines: 1,
+              enabled: false,
+            ),
           ),
-          // Invisible text field for cursor and text input
-          Positioned.fill(
-            child: Padding(
-              padding: EdgeInsets.all(12),
-              child: TextField(
-                controller: widget.controller,
-                style: TextStyle(color: Colors.transparent, fontSize: 16),
-                cursorColor: Colors.blue,
-                cursorWidth: 2,
-                decoration: InputDecoration(
-                  border: InputBorder.none,
-                  hintText:
-                      widget.controller.text.isEmpty ? widget.hintText : '',
-                  hintStyle: TextStyle(color: Colors.transparent),
-                  contentPadding: EdgeInsets.zero,
-                ),
+          // Overlay for error underlines
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: IgnorePointer(
+              child: RichText(
+                text: _buildStyledTextSpan(),
                 maxLines: 3,
-                onTap: () {
-                  // Handle tap to show suggestion
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ),
+          // Main interactive TextField
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            child: TextField(
+              controller: widget.controller,
+              focusNode: _focusNode,
+              style: const TextStyle(
+                color: Colors.black,
+                fontSize: 16,
+                height: 1.2,
+              ),
+              cursorColor: Colors.blue,
+              cursorWidth: 2,
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText:
+                    widget.controller.text.isEmpty ? widget.hintText : null,
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 16),
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              maxLines: 3,
+              minLines: 1,
+              onTap: () {
+                // Use a small delay to ensure cursor position is accurate
+                Future.delayed(const Duration(milliseconds: 50), () {
                   int cursorPosition = widget.controller.selection.baseOffset;
-                  if (cursorPosition >= 0) {
-                    TextError? error = _findErrorAtPosition(
-                      widget.controller.text,
-                      cursorPosition,
-                    );
+                  if (cursorPosition >= 0 &&
+                      widget.controller.text.isNotEmpty) {
+                    TextError? error = _findErrorAtPosition(cursorPosition);
                     if (error != null) {
                       _showSuggestion(error);
                     } else {
                       _removeOverlay();
                     }
                   }
-                },
-                onChanged: (value) {
-                  setState(() {});
-                  _removeOverlay();
-                },
-              ),
+                });
+              },
+              onChanged: (value) {
+                setState(() {});
+                _removeOverlay();
+              },
             ),
           ),
         ],
@@ -330,29 +408,35 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
     );
   }
 
-  TextSpan _buildTextSpan() {
+  TextSpan _buildStyledTextSpan() {
     String text = widget.controller.text;
     if (text.isEmpty) {
-      return TextSpan(
-        text: widget.hintText,
-        style: TextStyle(color: Colors.grey[400], fontSize: 16),
-      );
+      return const TextSpan();
     }
 
     List<TextSpan> spans = [];
     int currentIndex = 0;
 
-    // Sort errors by start position
+    // Sort errors by start position to handle overlaps correctly
     List<TextError> sortedErrors = List.from(_validErrors);
     sortedErrors.sort((a, b) => a.start.compareTo(b.start));
 
     for (TextError error in sortedErrors) {
+      // Skip errors that would cause index issues
+      if (error.start < currentIndex || error.end > text.length) {
+        continue;
+      }
+
       // Add normal text before error
       if (error.start > currentIndex) {
         spans.add(
           TextSpan(
             text: text.substring(currentIndex, error.start),
-            style: TextStyle(color: Colors.black, fontSize: 16),
+            style: const TextStyle(
+              color: Colors.transparent,
+              fontSize: 16,
+              height: 1.2,
+            ),
           ),
         );
       }
@@ -362,8 +446,9 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
         TextSpan(
           text: text.substring(error.start, error.end),
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.transparent,
             fontSize: 16,
+            height: 1.2,
             decoration: TextDecoration.underline,
             decorationColor: _getErrorColor(error.type),
             decorationStyle: TextDecorationStyle.wavy,
@@ -379,7 +464,11 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
       spans.add(
         TextSpan(
           text: text.substring(currentIndex),
-          style: TextStyle(color: Colors.black, fontSize: 16),
+          style: const TextStyle(
+            color: Colors.transparent,
+            fontSize: 16,
+            height: 1.2,
+          ),
         ),
       );
     }
