@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../widgets/check_button.dart';
+import '../widgets/lang_dropdown.dart';
+import '../widgets/result_card.dart';
 import '../models/text_gears_correct_response.dart';
 import '../models/text_gears_detect_response.dart';
 import '../models/text_gears_summarize_response.dart';
@@ -686,31 +689,17 @@ class _HomepageState extends State<Homepage>
 
           SizedBox(height: 16),
 
-          // Language indicator
-          DropdownButton<String>(
+          // Language indicator for grammar
+          LanguageDropdownMenu(
             value: detectedLanguage,
-            onChanged: (String? newValue) {
+            onChanged: (newValue) {
               if (newValue != null) {
                 setState(() {
                   detectedLanguage = newValue;
                 });
               }
             },
-            items:
-                <String>[
-                  'en-US',
-                  'en-GB',
-                  'fr-FR',
-                  'de-DE',
-                  'es-ES',
-                  'it-IT',
-                  'pt-PT',
-                ].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+            label: 'Language Indicator',
           ),
 
           SizedBox(height: 16),
@@ -740,69 +729,25 @@ class _HomepageState extends State<Homepage>
             ),
 
           // Grammar check button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoadingGrammar ? null : _checkGrammar,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-              child:
-                  isLoadingGrammar
-                      ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Checking...'),
-                        ],
-                      )
-                      : Text('Check Grammar'),
-            ),
+          CheckButton(
+            label: 'Check Grammar',
+            loadingLabel: 'Checking...',
+            isLoading: isLoadingGrammar,
+            onPressed: _checkGrammar,
+            backgroundColor: Colors.blue,
           ),
 
           SizedBox(height: 16),
 
           // Results summary
           if (grammarErrors.isNotEmpty)
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Grammar Check Results',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue[800],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Found ${grammarErrors.length} error(s)',
-                    style: TextStyle(color: Colors.blue[700]),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Click on underlined words to see suggestions and apply corrections.',
-                    style: TextStyle(color: Colors.blue[600], fontSize: 12),
-                  ),
-                ],
-              ),
+            // Grammar Check
+            ResultCard(
+              title: 'Grammar Check Results',
+              errorCount: grammarErrors.length,
+              description:
+                  'Click on underlined words to see suggestions and apply corrections.',
+              baseColor: Colors.blue,
             ),
         ],
       ),
@@ -836,30 +781,16 @@ class _HomepageState extends State<Homepage>
           SizedBox(height: 16),
 
           // Language selector for spelling
-          DropdownButton<String>(
+          LanguageDropdownMenu(
             value: detectedLanguage,
-            onChanged: (String? newValue) {
+            onChanged: (newValue) {
               if (newValue != null) {
                 setState(() {
                   detectedLanguage = newValue;
                 });
               }
             },
-            items:
-                <String>[
-                  'en-US',
-                  'en-GB',
-                  'fr-FR',
-                  'de-DE',
-                  'es-ES',
-                  'it-IT',
-                  'pt-PT',
-                ].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+            label: 'Spelling Language',
           ),
 
           SizedBox(height: 16),
@@ -889,69 +820,24 @@ class _HomepageState extends State<Homepage>
             ),
 
           // Spelling check button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoadingSpelling ? null : _checkSpelling,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.purple,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-              child:
-                  isLoadingSpelling
-                      ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Checking...'),
-                        ],
-                      )
-                      : Text('Check Spelling'),
-            ),
+          CheckButton(
+            label: 'Check Spelling',
+            loadingLabel: 'Checking...',
+            isLoading: isLoadingSpelling,
+            onPressed: _checkSpelling,
+            backgroundColor: Colors.purple,
           ),
 
           SizedBox(height: 16),
 
           // Results summary
           if (spellingErrors.isNotEmpty)
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.purple[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.purple[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Spelling Check Results',
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.purple[800],
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Found ${spellingErrors.length} spelling error(s)',
-                    style: TextStyle(color: Colors.purple[700]),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Click on underlined words to see suggestions and apply corrections.',
-                    style: TextStyle(color: Colors.purple[600], fontSize: 12),
-                  ),
-                ],
-              ),
+            ResultCard(
+              title: 'Spelling Check Results',
+              errorCount: spellingErrors.length,
+              description:
+                  'Click on underlined words to see suggestions and apply corrections.',
+              baseColor: Colors.purple,
             ),
         ],
       ),
@@ -986,30 +872,16 @@ class _HomepageState extends State<Homepage>
           SizedBox(height: 16),
 
           // Language selector for auto-correction
-          DropdownButton<String>(
+          LanguageDropdownMenu(
             value: detectedLanguage,
-            onChanged: (String? newValue) {
+            onChanged: (newValue) {
               if (newValue != null) {
                 setState(() {
                   detectedLanguage = newValue;
                 });
               }
             },
-            items:
-                <String>[
-                  'en-US',
-                  'en-GB',
-                  'fr-FR',
-                  'de-DE',
-                  'es-ES',
-                  'it-IT',
-                  'pt-PT',
-                ].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+            label: 'Auto-Correction Language',
           ),
 
           SizedBox(height: 16),
@@ -1039,82 +911,25 @@ class _HomepageState extends State<Homepage>
             ),
 
           // Auto-correct button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoadingAutoCorrect ? null : _autoCorrectText,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(vertical: 12),
-              ),
-              child:
-                  isLoadingAutoCorrect
-                      ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Analyzing...'),
-                        ],
-                      )
-                      : Text('Find Auto-Corrections'),
-            ),
+          CheckButton(
+            label: 'Find Auto-Corrections',
+            loadingLabel: 'Analyzing...',
+            isLoading: isLoadingAutoCorrect,
+            onPressed: _autoCorrectText,
+            backgroundColor: Colors.green,
           ),
 
           SizedBox(height: 16),
 
           // Results summary - only show if there are corrections
           if (autoErrors.isNotEmpty)
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.auto_fix_high,
-                        color: Colors.green[700],
-                        size: 20,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Auto-Correction Results',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.green[800],
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Found ${autoErrors.length} correction(s)',
-                    style: TextStyle(
-                      color: Colors.green[700],
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  SizedBox(height: 4),
-                  Text(
-                    'Tap on any green underlined word in the text above to apply the suggested correction.',
-                    style: TextStyle(color: Colors.green[600], fontSize: 12),
-                  ),
-                ],
-              ),
+            // Auto-Correction
+            ResultCard(
+              title: 'Auto-Correction Results',
+              errorCount: autoErrors.length,
+              description:
+                  'Tap on red underlined word in the text above to apply the suggested correction.',
+              baseColor: Colors.green,
             ),
 
           // Instructions when no errors found
@@ -1191,30 +1006,16 @@ class _HomepageState extends State<Homepage>
           const SizedBox(height: 16),
 
           // Language selector for suggestions
-          DropdownButton<String>(
+          LanguageDropdownMenu(
             value: detectedLanguage,
-            onChanged: (String? newValue) {
+            onChanged: (newValue) {
               if (newValue != null) {
                 setState(() {
                   detectedLanguage = newValue;
                 });
               }
             },
-            items:
-                <String>[
-                  'en-US',
-                  'en-GB',
-                  'fr-FR',
-                  'de-DE',
-                  'es-ES',
-                  'it-IT',
-                  'pt-PT',
-                ].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(value),
-                  );
-                }).toList(),
+            label: 'Suggestions Language',
           ),
 
           const SizedBox(height: 16),
@@ -1244,34 +1045,12 @@ class _HomepageState extends State<Homepage>
             ),
 
           // Get suggestions button
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoadingSuggestions ? null : _getTextSuggestions,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.indigo,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-              child:
-                  isLoadingSuggestions
-                      ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Getting Suggestions...'),
-                        ],
-                      )
-                      : const Text('Get Suggestions'),
-            ),
+          CheckButton(
+            label: 'Get Suggestions',
+            loadingLabel: 'Getting Suggestions...',
+            isLoading: isLoadingSuggestions,
+            onPressed: _getTextSuggestions,
+            backgroundColor: Colors.indigo,
           ),
 
           const SizedBox(height: 16),
@@ -1373,41 +1152,6 @@ class _HomepageState extends State<Homepage>
               ),
             ),
           ],
-
-          // Empty state when no suggestions
-          if (suggestions.isEmpty &&
-              !isLoadingSuggestions &&
-              suggestController.text.isNotEmpty &&
-              suggestionsErrorMessage == null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.lightbulb_outline,
-                    size: 48,
-                    color: Colors.grey[400],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No suggestions available',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Try entering more text to get better suggestions',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
         ],
       ),
     );
@@ -1462,33 +1206,13 @@ class _HomepageState extends State<Homepage>
             ),
           ),
           SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: isLoadingLanguage ? null : _detectLanguage,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-              ),
-              child:
-                  isLoadingLanguage
-                      ? Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text('Detecting...'),
-                        ],
-                      )
-                      : Text('Detect'),
-            ),
+          // Detect Language button
+          CheckButton(
+            label: 'Detect',
+            loadingLabel: 'Detecting...',
+            isLoading: isLoadingLanguage,
+            onPressed: _detectLanguage,
+            backgroundColor: Colors.blue,
           ),
           SizedBox(height: 16),
 
@@ -1592,35 +1316,12 @@ class _HomepageState extends State<Homepage>
             SizedBox(height: 16),
 
             // Summarize button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: isLoadingSummary ? null : _summarizeText,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                ),
-                child:
-                    isLoadingSummary
-                        ? Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            SizedBox(
-                              width: 16,
-                              height: 16,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                  Colors.white,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 8),
-                            Text('Summarizing...'),
-                          ],
-                        )
-                        : Text('Summarize'),
-              ),
+            CheckButton(
+              label: 'Summarize',
+              loadingLabel: 'Summarizing...',
+              isLoading: isLoadingSummary,
+              onPressed: _summarizeText,
+              backgroundColor: Colors.blue,
             ),
 
             // Error message
