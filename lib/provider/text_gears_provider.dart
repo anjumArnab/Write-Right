@@ -1,94 +1,95 @@
 import 'package:flutter/material.dart';
+import '../models/text_gears_response.dart';
 import '../models/text_gears_correct_response.dart';
 import '../models/text_gears_detect_response.dart';
 import '../models/text_gears_summarize_response.dart';
 import '../models/text_suggestion.dart';
 import '../models/text_gears_error.dart';
-import '../models/text_gears_response.dart';
 import '../services/api_service.dart';
 import '../widgets/custom_text_fields_with_error.dart';
 
 class TextGearsProvider extends ChangeNotifier {
-  late TextGearsApiService _textGearsService;
+  final TextGearsApiService _apiService;
 
-  // Controllers for TextFormField widgets
-  final TextEditingController grammarController = TextEditingController();
-  final TextEditingController spellingController = TextEditingController();
-  final TextEditingController autoController = TextEditingController();
-  final TextEditingController suggestController = TextEditingController();
-  final TextEditingController langController = TextEditingController();
-  final TextEditingController summaryController = TextEditingController();
+  TextGearsProvider({required String apiKey})
+    : _apiService = TextGearsApiService(apiKey: apiKey);
 
-  // Default text values
-  String grammarText = 'I is an engeered';
-  String spellingText = 'Seperatethewordds carefully';
-  String autoText = 'Whats you\'re name? I have recieved you\'re message.';
-  String suggestionText = 'My name is Seth. My family';
-  String summaryText = 'The quick brown fox jumps over';
+  // Common state
+  String _selectedLanguage = 'en-US';
+  String get selectedLanguage => _selectedLanguage;
 
-  // Grammar check variables
-  List<TextError> grammarErrors = [];
-  bool isLoadingGrammar = false;
-  String? grammarErrorMessage;
-  String detectedLanguage = 'en-US';
-
-  // Spelling check variables
-  List<TextError> spellingErrors = [];
-  bool isLoadingSpelling = false;
-  String? spellingErrorMessage;
-
-  // Auto-correction variables
-  List<TextError> autoErrors = [];
-  bool isLoadingAutoCorrect = false;
-  String? autoErrorMessage;
-  String correctedText = '';
-
-  // Text suggestions variables
-  List<TextSuggestion> suggestions = [];
-  bool isLoadingSuggestions = false;
-  String? suggestionsErrorMessage;
-  String correctedSuggestionText = '';
-
-  // Language detection variables
-  bool isLoadingLanguage = false;
-  String? languageErrorMessage;
-  String? detectedLanguageCode;
-  String? detectedDialect;
-  Map<String, double> languageProbabilities = {};
-
-  // Text summarization variables
-  bool isLoadingSummary = false;
-  String? summaryErrorMessage;
-  List<String> summaryKeywords = [];
-  List<String> summaryHighlights = [];
-  List<String> summaryResults = [];
-
-  TextGearsProvider() {
-    // Initialize the TextGears API service
-    _textGearsService = TextGearsApiService(apiKey: 'HKP36t4XOghGbAKn');
-
-    // Initialize controllers with default text
-    grammarController.text = grammarText;
-    spellingController.text = spellingText;
-    autoController.text = autoText;
-    suggestController.text = suggestionText;
-    langController.text = 'Bonjour, comment allez-vous?';
-    summaryController.text = summaryText;
+  void setLanguage(String language) {
+    _selectedLanguage = language;
+    notifyListeners();
   }
 
-  @override
-  void dispose() {
-    grammarController.dispose();
-    spellingController.dispose();
-    autoController.dispose();
-    suggestController.dispose();
-    langController.dispose();
-    summaryController.dispose();
-    _textGearsService.dispose();
-    super.dispose();
-  }
+  // Grammar check state
+  List<TextError> _grammarErrors = [];
+  bool _isLoadingGrammar = false;
+  String? _grammarErrorMessage;
 
-  // Convert TextGears API errors to UI TextError objects
+  List<TextError> get grammarErrors => _grammarErrors;
+  bool get isLoadingGrammar => _isLoadingGrammar;
+  String? get grammarErrorMessage => _grammarErrorMessage;
+
+  // Spelling check state
+  List<TextError> _spellingErrors = [];
+  bool _isLoadingSpelling = false;
+  String? _spellingErrorMessage;
+
+  List<TextError> get spellingErrors => _spellingErrors;
+  bool get isLoadingSpelling => _isLoadingSpelling;
+  String? get spellingErrorMessage => _spellingErrorMessage;
+
+  // Auto-correction state
+  List<TextError> _autoErrors = [];
+  bool _isLoadingAutoCorrect = false;
+  String? _autoErrorMessage;
+  String _correctedText = '';
+
+  List<TextError> get autoErrors => _autoErrors;
+  bool get isLoadingAutoCorrect => _isLoadingAutoCorrect;
+  String? get autoErrorMessage => _autoErrorMessage;
+  String get correctedText => _correctedText;
+
+  // Text suggestions state
+  List<TextSuggestion> _suggestions = [];
+  bool _isLoadingSuggestions = false;
+  String? _suggestionsErrorMessage;
+  String _correctedSuggestionText = '';
+
+  List<TextSuggestion> get suggestions => _suggestions;
+  bool get isLoadingSuggestions => _isLoadingSuggestions;
+  String? get suggestionsErrorMessage => _suggestionsErrorMessage;
+  String get correctedSuggestionText => _correctedSuggestionText;
+
+  // Language detection state
+  bool _isLoadingLanguage = false;
+  String? _languageErrorMessage;
+  String? _detectedLanguageCode;
+  String? _detectedDialect;
+  Map<String, double> _languageProbabilities = {};
+
+  bool get isLoadingLanguage => _isLoadingLanguage;
+  String? get languageErrorMessage => _languageErrorMessage;
+  String? get detectedLanguageCode => _detectedLanguageCode;
+  String? get detectedDialect => _detectedDialect;
+  Map<String, double> get languageProbabilities => _languageProbabilities;
+
+  // Text summarization state
+  bool _isLoadingSummary = false;
+  String? _summaryErrorMessage;
+  List<String> _summaryKeywords = [];
+  List<String> _summaryHighlights = [];
+  List<String> _summaryResults = [];
+
+  bool get isLoadingSummary => _isLoadingSummary;
+  String? get summaryErrorMessage => _summaryErrorMessage;
+  List<String> get summaryKeywords => _summaryKeywords;
+  List<String> get summaryHighlights => _summaryHighlights;
+  List<String> get summaryResults => _summaryResults;
+
+  // Convert API errors to UI errors
   List<TextError> _convertApiErrorsToTextErrors(
     List<TextGearsError> apiErrors,
   ) {
@@ -125,368 +126,260 @@ class TextGearsProvider extends ChangeNotifier {
     return textErrors;
   }
 
-  // Check grammar using TextGears API
-  Future<void> checkGrammar() async {
-    String text = grammarController.text.trim();
-
+  // Grammar check methods
+  Future<void> checkGrammar(String text) async {
     if (text.isEmpty) {
-      return;
+      throw Exception('Text cannot be empty');
     }
 
-    isLoadingGrammar = true;
-    grammarErrorMessage = null;
-    grammarErrors = [];
+    _isLoadingGrammar = true;
+    _grammarErrorMessage = null;
+    _grammarErrors = [];
     notifyListeners();
 
     try {
-      // Make API call to check grammar
-      TextGearsResponse response = await _textGearsService.checkGrammar(
+      TextGearsResponse response = await _apiService.checkGrammar(
         text: text,
-        language: detectedLanguage,
+        language: _selectedLanguage,
         useAI: true,
       );
 
       if (response.status) {
-        // Convert API errors to UI errors
-        List<TextError> errors = _convertApiErrorsToTextErrors(response.errors);
-
-        grammarErrors = errors;
-        isLoadingGrammar = false;
-        notifyListeners();
+        _grammarErrors = _convertApiErrorsToTextErrors(response.errors);
       } else {
-        grammarErrorMessage = 'API returned error status';
-        isLoadingGrammar = false;
-        notifyListeners();
+        _grammarErrorMessage = 'API returned error status';
       }
     } catch (e) {
-      grammarErrorMessage = 'Error checking grammar: ${e.toString()}';
-      isLoadingGrammar = false;
+      _grammarErrorMessage = 'Error checking grammar: ${e.toString()}';
+    } finally {
+      _isLoadingGrammar = false;
       notifyListeners();
     }
   }
 
-  // Check spelling using TextGears API
-  Future<void> checkSpelling() async {
-    String text = spellingController.text.trim();
-
+  // Spelling check methods
+  Future<void> checkSpelling(String text) async {
     if (text.isEmpty) {
-      return;
+      throw Exception('Text cannot be empty');
     }
 
-    isLoadingSpelling = true;
-    spellingErrorMessage = null;
-    spellingErrors = [];
+    _isLoadingSpelling = true;
+    _spellingErrorMessage = null;
+    _spellingErrors = [];
     notifyListeners();
 
     try {
-      // Make API call to check spelling
-      TextGearsResponse response = await _textGearsService.checkSpelling(
+      TextGearsResponse response = await _apiService.checkSpelling(
         text: text,
-        language: detectedLanguage,
+        language: _selectedLanguage,
         useAI: true,
       );
 
       if (response.status) {
-        // Convert API errors to UI errors
-        List<TextError> errors = _convertApiErrorsToTextErrors(response.errors);
-
-        spellingErrors = errors;
-        isLoadingSpelling = false;
-        notifyListeners();
+        _spellingErrors = _convertApiErrorsToTextErrors(response.errors);
       } else {
-        spellingErrorMessage = 'API returned error status';
-        isLoadingSpelling = false;
-        notifyListeners();
+        _spellingErrorMessage = 'API returned error status';
       }
     } catch (e) {
-      spellingErrorMessage = 'Error checking spelling: ${e.toString()}';
-      isLoadingSpelling = false;
+      _spellingErrorMessage = 'Error checking spelling: ${e.toString()}';
+    } finally {
+      _isLoadingSpelling = false;
       notifyListeners();
     }
   }
 
-  // Auto-correct text using TextGears API
-  Future<void> autoCorrectText() async {
-    String text = autoController.text.trim();
-
+  // Auto-correction methods
+  Future<void> autoCorrectText(String text) async {
     if (text.isEmpty) {
-      return;
+      throw Exception('Text cannot be empty');
     }
 
-    isLoadingAutoCorrect = true;
-    autoErrorMessage = null;
-    autoErrors = [];
-    correctedText = '';
+    _isLoadingAutoCorrect = true;
+    _autoErrorMessage = null;
+    _autoErrors = [];
+    _correctedText = '';
     notifyListeners();
 
     try {
-      // First, get grammar errors to show what will be corrected
-      TextGearsResponse grammarResponse = await _textGearsService.checkGrammar(
+      // Get grammar errors for highlighting
+      TextGearsResponse grammarResponse = await _apiService.checkGrammar(
         text: text,
-        language: detectedLanguage,
+        language: _selectedLanguage,
         useAI: true,
       );
 
-      // Then get the corrected text
-      TextGearsCorrectResponse correctResponse = await _textGearsService
-          .correctText(text: text, language: detectedLanguage);
+      // Get corrected text
+      TextGearsCorrectResponse correctResponse = await _apiService.correctText(
+        text: text,
+        language: _selectedLanguage,
+      );
 
       if (grammarResponse.status && correctResponse.status) {
-        // Convert API errors to UI errors for highlighting
-        List<TextError> errors = _convertApiErrorsToTextErrors(
-          grammarResponse.errors,
-        );
-
-        autoErrors = errors;
-        correctedText = correctResponse.corrected;
-        isLoadingAutoCorrect = false;
-        notifyListeners();
+        _autoErrors = _convertApiErrorsToTextErrors(grammarResponse.errors);
+        _correctedText = correctResponse.corrected;
       } else {
-        autoErrorMessage = 'API returned error status';
-        isLoadingAutoCorrect = false;
-        notifyListeners();
+        _autoErrorMessage = 'API returned error status';
       }
     } catch (e) {
-      autoErrorMessage = 'Error during auto-correction: ${e.toString()}';
-      isLoadingAutoCorrect = false;
+      _autoErrorMessage = 'Error during auto-correction: ${e.toString()}';
+    } finally {
+      _isLoadingAutoCorrect = false;
       notifyListeners();
     }
   }
 
-  // Get text suggestions using TextGears API
-  Future<void> getTextSuggestions() async {
-    String text = suggestController.text.trim();
-
+  // Text suggestions methods
+  Future<void> getTextSuggestions(String text) async {
     if (text.isEmpty) {
-      return;
+      throw Exception('Text cannot be empty');
     }
 
-    isLoadingSuggestions = true;
-    suggestionsErrorMessage = null;
-    suggestions = [];
-    correctedSuggestionText = '';
+    _isLoadingSuggestions = true;
+    _suggestionsErrorMessage = null;
+    _suggestions = [];
+    _correctedSuggestionText = '';
     notifyListeners();
 
     try {
-      // Make API call to get text suggestions
-      TextGearsSuggestResponse response = await _textGearsService.suggestText(
+      TextGearsSuggestResponse response = await _apiService.suggestText(
         text: text,
-        language: detectedLanguage,
+        language: _selectedLanguage,
       );
 
       if (response.status) {
-        suggestions = response.suggestions;
-        correctedSuggestionText = response.corrected;
-        isLoadingSuggestions = false;
-        notifyListeners();
+        _suggestions = response.suggestions;
+        _correctedSuggestionText = response.corrected;
       } else {
-        suggestionsErrorMessage = 'API returned error status';
-        isLoadingSuggestions = false;
-        notifyListeners();
+        _suggestionsErrorMessage = 'API returned error status';
       }
     } catch (e) {
-      suggestionsErrorMessage = 'Error getting suggestions: ${e.toString()}';
-      isLoadingSuggestions = false;
+      _suggestionsErrorMessage = 'Error getting suggestions: ${e.toString()}';
+    } finally {
+      _isLoadingSuggestions = false;
       notifyListeners();
     }
   }
 
-  // Detect language using TextGears API
-  Future<void> detectLanguage() async {
-    String text = langController.text.trim();
-
+  // Language detection methods
+  Future<void> detectLanguage(String text) async {
     if (text.isEmpty) {
-      return;
+      throw Exception('Text cannot be empty');
     }
 
-    isLoadingLanguage = true;
-    languageErrorMessage = null;
-    detectedLanguageCode = null;
-    detectedDialect = null;
-    languageProbabilities = {};
+    _isLoadingLanguage = true;
+    _languageErrorMessage = null;
+    _detectedLanguageCode = null;
+    _detectedDialect = null;
+    _languageProbabilities = {};
     notifyListeners();
 
     try {
-      // Make API call to detect language
-      TextGearsDetectResponse response = await _textGearsService.detectLanguage(
+      TextGearsDetectResponse response = await _apiService.detectLanguage(
         text: text,
       );
 
       if (response.status) {
-        detectedLanguageCode = response.language;
-        detectedDialect = response.dialect;
-        languageProbabilities = response.probabilities;
-        isLoadingLanguage = false;
-        notifyListeners();
+        _detectedLanguageCode = response.language;
+        _detectedDialect = response.dialect;
+        _languageProbabilities = response.probabilities;
       } else {
-        languageErrorMessage = 'API returned error status';
-        isLoadingLanguage = false;
-        notifyListeners();
+        _languageErrorMessage = 'API returned error status';
       }
     } catch (e) {
-      languageErrorMessage = 'Error detecting language: ${e.toString()}';
-      isLoadingLanguage = false;
+      _languageErrorMessage = 'Error detecting language: ${e.toString()}';
+    } finally {
+      _isLoadingLanguage = false;
       notifyListeners();
     }
   }
 
-  // Summarize text using TextGears API
-  Future<void> summarizeText() async {
-    String text = summaryController.text.trim();
-
-    if (text.isEmpty || text.length < 50) {
-      return;
+  // Text summarization methods
+  Future<void> summarizeText(String text, {int? maxSentences}) async {
+    if (text.isEmpty) {
+      throw Exception('Text cannot be empty');
     }
 
-    isLoadingSummary = true;
-    summaryErrorMessage = null;
-    summaryKeywords = [];
-    summaryHighlights = [];
-    summaryResults = [];
+    if (text.length < 50) {
+      throw Exception(
+        'Text is too short for summarization. Please enter at least 50 characters.',
+      );
+    }
+
+    _isLoadingSummary = true;
+    _summaryErrorMessage = null;
+    _summaryKeywords = [];
+    _summaryHighlights = [];
+    _summaryResults = [];
     notifyListeners();
 
     try {
-      // Make API call to summarize text
-      TextGearsSummarizeResponse response = await _textGearsService
-          .summarizeText(
-            text: text,
-            language: detectedLanguage,
-            maxSentences: 5, // Limit to 5 sentences in summary
-          );
+      TextGearsSummarizeResponse response = await _apiService.summarizeText(
+        text: text,
+        language: _selectedLanguage,
+        maxSentences: maxSentences ?? 5,
+      );
 
       if (response.status) {
-        summaryKeywords = response.keywords;
-        summaryHighlights = response.highlight;
-        summaryResults = response.summary;
-        isLoadingSummary = false;
-        notifyListeners();
+        _summaryKeywords = response.keywords;
+        _summaryHighlights = response.highlight;
+        _summaryResults = response.summary;
       } else {
-        summaryErrorMessage = 'API returned error status';
-        isLoadingSummary = false;
-        notifyListeners();
+        _summaryErrorMessage = 'API returned error status';
       }
     } catch (e) {
-      summaryErrorMessage = 'Error summarizing text: ${e.toString()}';
-      isLoadingSummary = false;
+      _summaryErrorMessage = 'Error summarizing text: ${e.toString()}';
+    } finally {
+      _isLoadingSummary = false;
       notifyListeners();
     }
   }
 
-  // Apply suggestion to the text field
-  void applySuggestion(String suggestion) {
-    String currentText = suggestController.text;
-    String newText = '${currentText.trimRight()} $suggestion';
-
-    suggestController.text = newText;
-    suggestController.selection = TextSelection.fromPosition(
-      TextPosition(offset: newText.length),
-    );
+  // Clear methods for resetting state
+  void clearGrammarResults() {
+    _grammarErrors = [];
+    _grammarErrorMessage = null;
     notifyListeners();
   }
 
-  // Update detected language
-  void updateDetectedLanguage(String language) {
-    detectedLanguage = language;
+  void clearSpellingResults() {
+    _spellingErrors = [];
+    _spellingErrorMessage = null;
     notifyListeners();
   }
 
-  // Helper method to get language name from code
-  String getLanguageName(String languageCode) {
-    const Map<String, String> languageNames = {
-      'en': 'English',
-      'fr': 'French',
-      'es': 'Spanish',
-      'de': 'German',
-      'it': 'Italian',
-      'pt': 'Portuguese',
-      'ru': 'Russian',
-      'zh': 'Chinese',
-      'ja': 'Japanese',
-      'ko': 'Korean',
-      'ar': 'Arabic',
-      'hi': 'Hindi',
-      'tr': 'Turkish',
-      'pl': 'Polish',
-      'nl': 'Dutch',
-      'sv': 'Swedish',
-      'da': 'Danish',
-      'no': 'Norwegian',
-      'fi': 'Finnish',
-      'cs': 'Czech',
-      'hu': 'Hungarian',
-      'ro': 'Romanian',
-      'bg': 'Bulgarian',
-      'hr': 'Croatian',
-      'sk': 'Slovak',
-      'sl': 'Slovenian',
-      'et': 'Estonian',
-      'lv': 'Latvian',
-      'lt': 'Lithuanian',
-      'mt': 'Maltese',
-      'ga': 'Irish',
-      'cy': 'Welsh',
-      'eu': 'Basque',
-      'ca': 'Catalan',
-      'gl': 'Galician',
-      'is': 'Icelandic',
-      'mk': 'Macedonian',
-      'sq': 'Albanian',
-      'sr': 'Serbian',
-      'bs': 'Bosnian',
-      'me': 'Montenegrin',
-    };
-
-    return languageNames[languageCode] ?? languageCode.toUpperCase();
-  }
-
-  // Helper method to get confidence percentage
-  double getConfidencePercentage() {
-    if (languageProbabilities.isEmpty || detectedLanguageCode == null) {
-      return 0.0;
-    }
-    return (languageProbabilities[detectedLanguageCode!] ?? 0.0) * 100;
-  }
-
-  // Clear specific error states
-  void clearGrammarErrors() {
-    grammarErrors = [];
-    grammarErrorMessage = null;
+  void clearAutoCorrectResults() {
+    _autoErrors = [];
+    _autoErrorMessage = null;
+    _correctedText = '';
     notifyListeners();
   }
 
-  void clearSpellingErrors() {
-    spellingErrors = [];
-    spellingErrorMessage = null;
+  void clearSuggestionsResults() {
+    _suggestions = [];
+    _suggestionsErrorMessage = null;
+    _correctedSuggestionText = '';
     notifyListeners();
   }
 
-  void clearAutoErrors() {
-    autoErrors = [];
-    autoErrorMessage = null;
-    correctedText = '';
+  void clearLanguageResults() {
+    _detectedLanguageCode = null;
+    _detectedDialect = null;
+    _languageProbabilities = {};
+    _languageErrorMessage = null;
     notifyListeners();
   }
 
-  void clearSuggestions() {
-    suggestions = [];
-    suggestionsErrorMessage = null;
-    correctedSuggestionText = '';
+  void clearSummaryResults() {
+    _summaryKeywords = [];
+    _summaryHighlights = [];
+    _summaryResults = [];
+    _summaryErrorMessage = null;
     notifyListeners();
   }
 
-  void clearLanguageDetection() {
-    detectedLanguageCode = null;
-    detectedDialect = null;
-    languageProbabilities = {};
-    languageErrorMessage = null;
-    notifyListeners();
-  }
-
-  void clearSummary() {
-    summaryKeywords = [];
-    summaryHighlights = [];
-    summaryResults = [];
-    summaryErrorMessage = null;
-    notifyListeners();
+  @override
+  void dispose() {
+    _apiService.dispose();
+    super.dispose();
   }
 }
