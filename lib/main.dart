@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
-import 'package:write_right/provider/text_gears_provider.dart';
+import '../api_key.dart';
+import '../provider/text_gears_provider.dart';
 import '../views/homepage.dart';
 
 void main() {
@@ -14,7 +15,7 @@ class WriteRight extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (context) => TextGearsProvider(),
+      create: (context) => TextGearsProvider(apiKey: apiKey),
       child: MaterialApp(
         title: 'Write Right',
         debugShowCheckedModeBanner: false,
