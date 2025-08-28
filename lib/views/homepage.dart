@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/check_button.dart';
 import '../widgets/lang_dropdown.dart';
-import '../widgets/result_card.dart';
 import '../models/text_gears_correct_response.dart';
 import '../models/text_gears_detect_response.dart';
 import '../models/text_gears_summarize_response.dart';
@@ -736,19 +735,6 @@ class _HomepageState extends State<Homepage>
             onPressed: _checkGrammar,
             backgroundColor: Colors.blue,
           ),
-
-          SizedBox(height: 16),
-
-          // Results summary
-          if (grammarErrors.isNotEmpty)
-            // Grammar Check
-            ResultCard(
-              title: 'Grammar Check Results',
-              errorCount: grammarErrors.length,
-              description:
-                  'Click on underlined words to see suggestions and apply corrections.',
-              baseColor: Colors.blue,
-            ),
         ],
       ),
     );
@@ -827,18 +813,6 @@ class _HomepageState extends State<Homepage>
             onPressed: _checkSpelling,
             backgroundColor: Colors.purple,
           ),
-
-          SizedBox(height: 16),
-
-          // Results summary
-          if (spellingErrors.isNotEmpty)
-            ResultCard(
-              title: 'Spelling Check Results',
-              errorCount: spellingErrors.length,
-              description:
-                  'Click on underlined words to see suggestions and apply corrections.',
-              baseColor: Colors.purple,
-            ),
         ],
       ),
     );
@@ -918,30 +892,6 @@ class _HomepageState extends State<Homepage>
             onPressed: _autoCorrectText,
             backgroundColor: Colors.green,
           ),
-
-          SizedBox(height: 16),
-
-          // Results summary - only show if there are corrections
-          if (autoErrors.isNotEmpty)
-            // Auto-Correction
-            ResultCard(
-              title: 'Auto-Correction Results',
-              errorCount: autoErrors.length,
-              description:
-                  'Tap on red underlined word in the text above to apply the suggested correction.',
-              baseColor: Colors.green,
-            ),
-
-          // Instructions when no errors found
-          if (autoErrors.isEmpty &&
-              !isLoadingAutoCorrect &&
-              autoController.text.isNotEmpty)
-            Expanded(
-              child: Text(
-                'No corrections needed! Your text looks good.',
-                style: TextStyle(color: Colors.blue[700]),
-              ),
-            ),
         ],
       ),
     );
@@ -1057,99 +1007,74 @@ class _HomepageState extends State<Homepage>
 
           // Suggestions display with Wrap implementation
           if (suggestions.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.indigo[50],
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.indigo[300]!),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.lightbulb_outline,
-                        color: Colors.indigo[700],
-                        size: 20,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Continue with:',
+                      style: TextStyle(
+                        color: Colors.indigo[800],
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Continue with:',
-                        style: TextStyle(
-                          color: Colors.indigo[800],
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
 
-                  // Wrap widget with suggestion chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children:
-                        suggestions
-                            .take(5)
-                            .map(
-                              (suggestion) => InkWell(
-                                onTap:
-                                    () => _applySuggestion(suggestion.nextWord),
-                                borderRadius: BorderRadius.circular(12),
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
+                // Wrap widget with suggestion chips
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children:
+                      suggestions
+                          .take(5)
+                          .map(
+                            (suggestion) => InkWell(
+                              onTap:
+                                  () => _applySuggestion(suggestion.nextWord),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.indigo[200]!,
                                   ),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Colors.indigo[200]!,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.add_circle_outline,
-                                        color: Colors.indigo[600],
-                                        size: 16,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        suggestion.nextWord,
-                                        style: TextStyle(
-                                          color: Colors.indigo[800],
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
+                                ),
+                                child: Text(
+                                  suggestion.nextWord,
+                                  style: TextStyle(
+                                    color: Colors.indigo[800],
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w500,
                                   ),
                                 ),
                               ),
-                            )
-                            .toList(),
-                  ),
+                            ),
+                          )
+                          .toList(),
+                ),
 
-                  if (suggestions.length > 5)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12),
-                      child: Text(
-                        '... and ${suggestions.length - 5} more suggestions',
-                        style: TextStyle(
-                          color: Colors.indigo[600],
-                          fontSize: 12,
-                          fontStyle: FontStyle.italic,
-                        ),
+                if (suggestions.length > 5)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 12),
+                    child: Text(
+                      '... and ${suggestions.length - 5} more suggestions',
+                      style: TextStyle(
+                        color: Colors.indigo[600],
+                        fontSize: 12,
+                        fontStyle: FontStyle.italic,
                       ),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ],
         ],
@@ -1240,32 +1165,38 @@ class _HomepageState extends State<Homepage>
 
           // Detection results
           if (detectedLanguageCode != null && !isLoadingLanguage) ...[
-            Text(
-              'Detected Language',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 8),
-            Container(
-              padding: EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green[100],
-                borderRadius: BorderRadius.circular(8),
-              ),
+            Center(
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  SizedBox(height: 24),
                   Text(
-                    '${_getLanguageName(detectedLanguageCode!)} (${detectedLanguageCode!}${detectedDialect != null ? '-${detectedDialect!}' : ''})',
+                    'Detected Language:',
                     style: TextStyle(
-                      color: Colors.green[800],
-                      fontWeight: FontWeight.bold,
                       fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey[700],
                     ),
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 8),
                   Text(
-                    'Confidence: ${_getConfidencePercentage().toStringAsFixed(1)}%',
-                    style: TextStyle(color: Colors.green[800]),
+                    _getLanguageName(detectedLanguageCode!),
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  if (detectedDialect != null) ...[
+                    SizedBox(height: 4),
+                    Text(
+                      'Dialect: $detectedDialect',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                  ],
+                  SizedBox(height: 8),
+                  Text(
+                    'Confidence: ${_getConfidencePercentage().toStringAsFixed(2)}%',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
                   ),
                 ],
               ),
