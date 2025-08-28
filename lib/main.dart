@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+import 'package:write_right/provider/text_gears_provider.dart';
 import '../views/homepage.dart';
 
 void main() {
@@ -11,11 +13,14 @@ class WriteRight extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Write Right',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(textTheme: GoogleFonts.poppinsTextTheme()),
-      home: Homepage(),
+    return ChangeNotifierProvider(
+      create: (context) => TextGearsProvider(),
+      child: MaterialApp(
+        title: 'Write Right',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(textTheme: GoogleFonts.latoTextTheme()),
+        home: Homepage(),
+      ),
     );
   }
 }
