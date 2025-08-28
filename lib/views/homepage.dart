@@ -27,8 +27,8 @@ class _HomepageState extends State<Homepage>
   TextEditingController suggestController = TextEditingController();
   TextEditingController langController = TextEditingController();
 
-  String grammarText = 'I is an engeered';
-  String spellingText = 'Seperatethewordds carefully';
+  String grammarText = 'She don’t knows how to drive a car.';
+  String spellingText = 'The techer gave us alot of homework yestarday';
   String autoText = 'Whats you\'re name? I have recieved you\'re message.';
   String suggestionText = 'My name is Seth. My family';
   String summaryText = 'The quick brown fox jumps over';
