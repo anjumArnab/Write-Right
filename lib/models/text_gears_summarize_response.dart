@@ -1,4 +1,3 @@
-// Response model for summarization
 class TextGearsSummarizeResponse {
   final bool status;
   final List<String> keywords;

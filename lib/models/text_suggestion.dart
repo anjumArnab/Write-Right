@@ -1,4 +1,3 @@
-// Response model for text suggestions
 class TextSuggestion {
   final String text;
   final String nextWord;

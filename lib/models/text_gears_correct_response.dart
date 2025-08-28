@@ -1,4 +1,3 @@
-// Response model for auto correction
 class TextGearsCorrectResponse {
   final bool status;
   final String corrected;

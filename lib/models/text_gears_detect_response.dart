@@ -1,4 +1,3 @@
-// Response model for language detection
 class TextGearsDetectResponse {
   final bool status;
   final String? language;
