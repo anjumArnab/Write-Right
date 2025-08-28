@@ -24,6 +24,7 @@ class CheckButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
+      height: 50,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
@@ -45,7 +46,7 @@ class CheckButton extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    Text(loadingLabel),
+                    Text(loadingLabel, style: TextStyle(fontSize: 15)),
                   ],
                 )
                 : Text(label),
