@@ -24,7 +24,8 @@ class _HomepageState extends State<Homepage>
   TextEditingController langController = TextEditingController();
   TextEditingController summaryController = TextEditingController();
 
-  String grammarText = 'She don\'t knows how to drive a car.';
+  String grammarText =
+      'My friend don\'t goes to school regular. He always playing games and not studying good. Yesterday they was very tired but still go to park for play.';
   String spellingText = 'The techer gave us alot of homework yestarday';
   String autoText = 'Whats you\'re name? I have recieved you\'re message.';
   String suggestionText = 'My name is Seth. My family';
