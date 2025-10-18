@@ -8,11 +8,7 @@ Application that integrates the [TextGear API](https://textgears.com/) to perfor
 - Language Detection  
 - Text Summarization  
 
-## Screenshots
+## Preview
 
 
-![Grammar Check](assets/t01.png)
-![Spelling Check](assets/t02.png)
-![Auto Correction](assets/t03.png)
-![Text Suggestion](assets/t04.png)
-![Text Summarization](assets/t05.png)
+![WriteRight](assets/writeright.gif)
