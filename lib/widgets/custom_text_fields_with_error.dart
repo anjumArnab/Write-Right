@@ -47,8 +47,8 @@ class ErrorTextEditingController extends TextEditingController {
   ErrorTextEditingController({
     required this.errors,
     this.onErrorTap,
-    String? text,
-  }) : super(text: text);
+    super.text,
+  });
 
   Color _getErrorColor(ErrorType type) {
     switch (type) {
@@ -365,7 +365,7 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
                                   ),
                                 ),
                                 Text(
-                                  '"${error.originalText}"',
+                                  error.originalText,
                                   style: const TextStyle(
                                     color: Colors.red,
                                     fontWeight: FontWeight.w500,
@@ -380,7 +380,7 @@ class _CustomTextFieldWithErrorsState extends State<CustomTextFieldWithErrors> {
                                   ),
                                 ),
                                 Text(
-                                  '"${error.suggestion}"',
+                                  error.suggestion,
                                   style: TextStyle(
                                     color: Colors.green[700],
                                     fontWeight: FontWeight.w500,
