@@ -19,7 +19,10 @@ class WriteRight extends StatelessWidget {
       child: MaterialApp(
         title: 'Write Right',
         debugShowCheckedModeBanner: false,
-        theme: ThemeData(textTheme: GoogleFonts.latoTextTheme()),
+        theme: ThemeData(
+          scaffoldBackgroundColor: Color(0xFFF5F5F5),
+          textTheme: GoogleFonts.latoTextTheme(),
+        ),
         home: Homepage(),
       ),
     );
